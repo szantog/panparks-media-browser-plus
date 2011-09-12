@@ -29,7 +29,7 @@ function media_browser_plus_form_media_admin_alter(&$form, &$form_state) {
   );
   // check which mode we are in
   if (isset($form_state['build_info']['args'][0]) && $form_state['build_info']['args'][0] != 'thumbnails') {
-    return _media_browser_plus_media_admin_list_alter($form, $form_state);  
+    return _media_browser_plus_media_admin_list_alter($form, $form_state);
   }
 
   // check access rights
@@ -288,7 +288,7 @@ function media_browser_plus_change_folder($form, &$form_state) {
     $media->field_folder[LANGUAGE_NONE][0]['tid'] = $folder;
   }
   else {
-    $media->field_folder = array(LANGUAGE_NONE => array(array('tid' => $folder))); 
+    $media->field_folder = array(LANGUAGE_NONE => array(array('tid' => $folder)));
   }
 
   // save changes
@@ -314,12 +314,12 @@ function media_browser_plus_thumbnailsJSON() {
         $valid = TRUE;
         foreach ($value as $type => $params) {
           foreach ($params as $param) {
-            
+
             if (strlen(trim($param)) == 0) {
               $valid = FALSE;
               break;
             }
-          }  
+          }
         }
         if ($valid) {
           $conditions[] = $value;
@@ -569,18 +569,20 @@ function media_browser_plus_submit($form, &$form_state) {
 }
 
 /**
- * Form submit handler for the media browser forms that edit media entities.
+ * Implements hook_file_update
  *
  * Changes file's filesystem physical folder
  *
  * @see media_browser_plus_form_media_edit_alter()
  */
-function media_browser_plus_edit_file_submit($form, &$form_state) {
-  $media = $form_state['file'];
-  $folder_id = $media->field_folder[LANGUAGE_NONE][0]['tid'];
-  // Only save it if the folder id is changed
-  if ($form['field_folder'][LANGUAGE_NONE]['#default_value'][0] != $folder_id) {
-    media_browser_plus_file_move($folder_id, $media);
+function media_browser_plus_file_update($file) {
+  if ($folder_id = $file->field_folder[LANGUAGE_NONE][0]['tid']) {
+    $term = taxonomy_term_load($folder_id);
+    $uri = media_browser_plus_construct_dir_path($term) . '/' . $file->filename ;
+    // Only save it if the folder is changed
+    if (!is_file($uri) && is_file($file->uri)) {
+      media_browser_plus_file_move($folder_id, $file);
+    }
   }
 }
 
@@ -1502,7 +1504,7 @@ function media_browser_plus_media_settings_submit($form, &$form_state) {
     variable_set('media_root_folder', $new_root);
     media_browser_plus_move_physical_folder($source, $destination);
   }
-  
+
   // notify user
   drupal_set_message(t('Media Browser Plus Settings changed successfully'));
   // go back to media overview
@@ -1750,7 +1752,7 @@ function media_browser_plus_library_browser($form, &$form_state, $multiselect, $
   // removing options form part
   unset($form['options']);
   if (!media_browser_plus_access('media list view') || !media_browser_plus_access('media grid view')) {
-    unset($form['switch']); 
+    unset($form['switch']);
   }
   // add main grid view window
   $form['admin'] = media_browser_plus_grid_view_form(TRUE, $multiselect);
