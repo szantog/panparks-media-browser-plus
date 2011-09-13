@@ -673,7 +673,7 @@ function media_browser_plus_form_media_edit_alter(&$form, &$form_state) {
     '#weight' => 20,
     '#submit' => array('media_browser_plus_edit_cancel'),
   );
-  $form['actions']['submit']['#submit'][] = 'media_browser_plus_edit_file_submit';
+  //$form['actions']['submit']['#submit'][] = 'media_browser_plus_edit_file_submit';
 }
 
 /**
