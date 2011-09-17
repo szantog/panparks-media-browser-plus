@@ -563,7 +563,7 @@ function media_browser_plus_submit($form, &$form_state) {
   }
 
   foreach ($media_entities as $media) {
-    media_browser_plus_file_move($form_state['values']['field_folder'], $media);
+
   }
 
 }
@@ -575,14 +575,10 @@ function media_browser_plus_submit($form, &$form_state) {
  *
  * @see media_browser_plus_form_media_edit_alter()
  */
-function media_browser_plus_file_update($file) {
-  if ($folder_id = $file->field_folder[LANGUAGE_NONE][0]['tid']) {
-    $term = taxonomy_term_load($folder_id);
-    $uri = media_browser_plus_construct_dir_path($term) . '/' . $file->filename ;
-    // Only save it if the folder is changed
-    if (!is_file($uri) && is_file($file->uri)) {
-      media_browser_plus_file_move($folder_id, $file);
-    }
+function media_browser_plus_media_upload_destination_alter(&$destination, $file) {
+  if ($folder_id = $file->field_folder[LANGUAGE_NONE][0]['tid']){
+    $folder = media_browser_plus_folder_load($folder_id);
+    $destination = media_browser_plus_construct_dir_path($folder) . '/' . $file->filename;
   }
 }
 
