@@ -518,28 +518,6 @@ function media_browser_plus_submit($form, &$form_state) {
   }
   $media_entities = file_load_multiple($fids);
 
-  // If tags have been entered, apply them to each new entity.
-  if (!empty($form_state['values']['field_tags'])) {
-    // Create any new taxonomy terms.
-    foreach ($form_state['values']['field_tags'] as $i => &$item) {
-      if ($item['tid'] == 'autocreate') {
-        $term = (object) $item;
-        unset($term->tid);
-        taxonomy_term_save($term);
-        $item['tid'] = $term->tid;
-      }
-      unset($item);
-    }
-
-    foreach ($media_entities as $media) {
-      $media->field_tags[LANGUAGE_NONE] = $form_state['values']['field_tags'];
-    }
-  }
-  // apply folder
-  foreach ($media_entities as $media) {
-    $media->field_folder[LANGUAGE_NONE] = array(array('tid' => $form_state['values']['field_folder']));
-  }
-
   // If the new media is from a 3rd party provider, and that provider also
   // provides MRSS data about the media, then populate the title and description
   // fields from that data.
@@ -560,23 +538,33 @@ function media_browser_plus_submit($form, &$form_state) {
         }
       }
     }
+    foreach ($media_entities as $media) {
+      file_save($media);
+    }
   }
-
-  foreach ($media_entities as $media) {
-
-  }
-
 }
 
-/**
- * Implements hook_file_update
- *
- * Changes file's filesystem physical folder
- *
- * @see media_browser_plus_form_media_edit_alter()
- */
-function media_browser_plus_media_upload_destination_alter(&$destination, $file) {
-  if ($folder_id = $file->field_folder[LANGUAGE_NONE][0]['tid']){
+function media_browser_plus_media_file_build_alter(&$file, &$context) {
+  $values = $context['form_state_values'];
+  $destination = &$context['destination'];
+
+  // If tags have been entered, apply them to each new entity.
+  if (!empty($values['field_tags'])) {
+    // Create any new taxonomy terms.
+    foreach ($values['field_tags'] as $i => &$item) {
+      if ($item['tid'] == 'autocreate') {
+        $term = (object) $item;
+        unset($term->tid);
+        taxonomy_term_save($term);
+        $item['tid'] = $term->tid;
+      }
+      $file->field_tags[LANGUAGE_NONE][$i] = array('tid' => $item['tid']);
+      unset($item);
+    }
+  }
+  //Apply folder
+  if ($folder_id = $values['field_folder']){
+    $file->field_folder[LANGUAGE_NONE] = array(array('tid' => $values['field_folder']));
     $folder = media_browser_plus_folder_load($folder_id);
     $destination = media_browser_plus_construct_dir_path($folder) . '/' . $file->filename;
   }
