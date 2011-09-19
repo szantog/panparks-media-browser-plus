@@ -29,7 +29,7 @@ function media_browser_plus_form_media_admin_alter(&$form, &$form_state) {
   );
   // check which mode we are in
   if (isset($form_state['build_info']['args'][0]) && $form_state['build_info']['args'][0] != 'thumbnails') {
-    return _media_browser_plus_media_admin_list_alter($form, $form_state);  
+    return _media_browser_plus_media_admin_list_alter($form, $form_state);
   }
 
   // check access rights
@@ -288,7 +288,7 @@ function media_browser_plus_change_folder($form, &$form_state) {
     $media->field_folder[LANGUAGE_NONE][0]['tid'] = $folder;
   }
   else {
-    $media->field_folder = array(LANGUAGE_NONE => array(array('tid' => $folder))); 
+    $media->field_folder = array(LANGUAGE_NONE => array(array('tid' => $folder)));
   }
 
   // save changes
@@ -314,12 +314,12 @@ function media_browser_plus_thumbnailsJSON() {
         $valid = TRUE;
         foreach ($value as $type => $params) {
           foreach ($params as $param) {
-            
+
             if (strlen(trim($param)) == 0) {
               $valid = FALSE;
               break;
             }
-          }  
+          }
         }
         if ($valid) {
           $conditions[] = $value;
@@ -1502,7 +1502,7 @@ function media_browser_plus_media_settings_submit($form, &$form_state) {
     variable_set('media_root_folder', $new_root);
     media_browser_plus_move_physical_folder($source, $destination);
   }
-  
+
   // notify user
   drupal_set_message(t('Media Browser Plus Settings changed successfully'));
   // go back to media overview
@@ -1750,7 +1750,7 @@ function media_browser_plus_library_browser($form, &$form_state, $multiselect, $
   // removing options form part
   unset($form['options']);
   if (!media_browser_plus_access('media list view') || !media_browser_plus_access('media grid view')) {
-    unset($form['switch']); 
+    unset($form['switch']);
   }
   // add main grid view window
   $form['admin'] = media_browser_plus_grid_view_form(TRUE, $multiselect);
@@ -2100,4 +2100,48 @@ function media_browser_plus_file_move($tid, $media, $replace = FILE_EXISTS_RENAM
   $path = media_browser_plus_construct_dir_path($folder);
   $destination = $path . '/' . $media->filename;
   file_move($media, $destination, $replace);
+}
+
+/*
+ * Implements hook_file_presave
+ * If a field doesn't use media widget, but upload file to a media folder
+ * need to set field_folder in the file object.
+ * @param $file
+ *   The file object.
+ */
+function media_browser_plus_file_presave($file) {
+  //Only works, when upload source is NOT the media widget.
+  if (isset($file->source) && $file->source != 'upload') {
+    $path_items = explode('/',  file_uri_target($file->uri));
+    //Remove the filename
+    array_pop($path_items);
+
+    if (!empty($path_items)) {
+      foreach ($path_items as $key => $term_name) {
+        //First, check, if $term exist with this name,
+        //if not, no need to continue, this is not a media-folder path.
+        if ($terms = taxonomy_get_term_by_name($term_name)) {
+          //This need, because of there should be term name out of media_folders vocabulary too;
+          foreach ($terms as $term) {
+            $found = FALSE;
+            if ($term->vocabulary_machine_name = 'media_folders') {
+              $found = TRUE;
+            }
+          }
+          //If not found any items in media folder vocab, doesn't need more work, not a media library path.
+          if (!$found) {
+            exit;
+          }
+        }
+        //If not found term with this name, doesnt't need more work, not a media library path.
+        else {
+          exit;
+        }
+      }
+      //At the and of iterations, get the term object of last path item. We need it.
+      //@todo: Is this right?? We always need the last item??
+      $file->field_folder[LANGUAGE_NONE][0]['tid'] = $term->tid;
+    }
+  }
+  dsm(get_defined_vars());
 }
