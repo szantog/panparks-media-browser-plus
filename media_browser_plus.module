@@ -2129,5 +2129,4 @@ function media_browser_plus_file_presave($file) {
       $file->field_folder[LANGUAGE_NONE][0]['tid'] = $term->tid;
     }
   }
-  dsm(get_defined_vars());
 }
