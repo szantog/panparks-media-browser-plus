@@ -2087,3 +2087,47 @@ function media_browser_plus_file_move($tid, $media, $replace = FILE_EXISTS_RENAM
   $destination = $path . '/' . $media->filename;
   file_move($media, $destination, $replace);
 }
+
+/*
+ * Implements hook_file_presave
+ * If a field doesn't use media widget, but upload file to a media folder
+ * need to set field_folder in the file object.
+ * @param $file
+ *   The file object.
+ */
+function media_browser_plus_file_presave($file) {
+  //Only works, when upload source is NOT the media widget.
+  if (isset($file->source) && $file->source != 'upload') {
+    $path_items = explode('/',  file_uri_target($file->uri));
+    //Remove the filename
+    array_pop($path_items);
+
+    if (!empty($path_items)) {
+      foreach ($path_items as $key => $term_name) {
+        //First, check, if $term exist with this name,
+        //if not, no need to continue, this is not a media-folder path.
+        if ($terms = taxonomy_get_term_by_name($term_name)) {
+          //This need, because of there should be term name out of media_folders vocabulary too;
+          foreach ($terms as $term) {
+            $found = FALSE;
+            if ($term->vocabulary_machine_name = 'media_folders') {
+              $found = TRUE;
+            }
+          }
+          //If not found any items in media folder vocab, doesn't need more work, not a media library path.
+          if (!$found) {
+            exit;
+          }
+        }
+        //If not found term with this name, doesnt't need more work, not a media library path.
+        else {
+          exit;
+        }
+      }
+      //At the and of iterations, get the term object of last path item. We need it.
+      //@todo: Is this right?? We always need the last item??
+      $file->field_folder[LANGUAGE_NONE][0]['tid'] = $term->tid;
+    }
+  }
+  dsm(get_defined_vars());
+}
