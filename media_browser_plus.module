@@ -2090,12 +2090,13 @@ function media_browser_plus_file_move($tid, $media, $replace = FILE_EXISTS_RENAM
 
 /*
  * Implements hook_file_presave
- * If a field doesn't use media widget, but upload file to a media folder
- * need to set field_folder in the file object.
+ *
  * @param $file
  *   The file object.
  */
 function media_browser_plus_file_presave($file) {
+  // If a field doesn't use media widget, but upload file to a media folder
+  // need to set field_folder in the file object.
   //Only works, when upload source is NOT the media widget.
   if (isset($file->source) && $file->source != 'upload') {
     $path_items = explode('/',  file_uri_target($file->uri));
@@ -2128,5 +2129,16 @@ function media_browser_plus_file_presave($file) {
       //@todo: Is this right?? We always need the last item??
       $file->field_folder[LANGUAGE_NONE][0]['tid'] = $term->tid;
     }
+  }
+  //@todo, move this to file_presave folder, if http://drupal.org/node/1283000 is commited.
+  //Physical move if field_folder changed.
+  $original_tid = isset($file->original->field_folder[LANGUAGE_NONE][0]['tid']) ? $file->original->field_folder[LANGUAGE_NONE][0]['tid'] : NULL;
+  $tid = isset($file->field_folder[LANGUAGE_NONE][0]['tid']) ? $file->field_folder[LANGUAGE_NONE][0]['tid'] : NULL;
+  if ($original_tid && $original_tid != $tid) {
+    $path = media_browser_plus_construct_dir_path(taxonomy_term_load($tid));
+    $destination = $path . '/' . $file->filename;
+    if (file_unmanaged_move($file->uri, $destination, TRUE)) {
+      $file->uri = $destination;
+    };
   }
 }
